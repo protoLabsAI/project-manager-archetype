@@ -1,14 +1,14 @@
-# A protoAgent plugin BUNDLE (ADR 0040) — the Lead Engineer tier of the
+# A protoAgent plugin BUNDLE (ADR 0040) — the Project Manager tier of the
 # portfolio→team hierarchy. This is the DEDICATED bundle repo the archetype
-# catalog installs (protoAgent's archetype-catalog.json `lead-engineer` row);
-# the persona ships as protoAgent's `lead-engineer` soul preset. Dogfooded on
+# catalog installs (protoAgent's archetype-catalog.json `project-manager` row);
+# the persona ships as protoAgent's `project-manager` soul preset. Dogfooded on
 # the protoAgent repo itself (2026-07), then frozen. Development/reference host:
 # github.com/protoLabsAI/leadEngineer.
 #
 # Install (onto any host):  python -m server plugin install <this-repo-url>
 #
-# A Lead Engineer focuses on ONE repo and a set of coding agents. The Portfolio
-# Manager tier (portfolio plugin, ADR 0055) treats each Lead Engineer as a board it
+# A Project Manager focuses on ONE repo and a set of coding agents. The Portfolio
+# Manager tier (portfolio plugin, ADR 0055) treats each Project Manager as a board it
 # can dispatch to over A2A and read back — so this bundle is deliberately the team
 # subset of the old pm-stack: project_board (runs the board + spawn loop) WITHOUT
 # portfolio (that's the manager-of-teams, a separate bundle).
@@ -30,10 +30,10 @@
 # manifest into a scratch agent and probe every declared console view). Keep member
 # entries on ONE line — scripts/check_bundle_updates.py rewrites the `ref:` in place.
 
-id: lead-engineer
-name: Lead Engineer
+id: project-manager
+name: Project Manager
 description: >-
-  A single-repo technical lead — the bridge between an operator's intent and the
+  A single-repo project manager — the bridge between an operator's intent and the
   team that ships it. It reads code deeply but never holds the keyboard: its file
   tools are read-only, and every change ships through the board — decomposed into
   features, dispatched to a coding agent in a disposable per-feature git worktree,
@@ -81,9 +81,9 @@ config:                                              # recommended defaults (you
   agent_browser:
     panel_mode: full
 
-# Agent archetype (ADR 0042) — presents this bundle as a "Lead Engineer" agent type
+# Agent archetype (ADR 0042) — presents this bundle as a "Project Manager" agent type
 # in the new-agent picker. Additive metadata; it doesn't change the bundle shape.
 archetype:
-  label: Lead Engineer
-  icon: Wrench
-  blurb: Single-repo technical lead — reads deeply, never holds the keyboard; ships every change through a board of coding agents and reports back as it merges.
+  label: Project Manager
+  icon: ClipboardList
+  blurb: Single-repo project manager — reads deeply, never holds the keyboard; ships every change through a board of coding agents and reports back as it merges.

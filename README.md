@@ -1,7 +1,7 @@
-# lead-engineer-stack
+# project-manager-stack
 
-The **Lead Engineer** archetype bundle for [protoAgent](https://github.com/protoLabsAI/protoAgent) —
-a single-repo technical lead that reads deeply but never holds the keyboard:
+The **Project Manager** archetype bundle for [protoAgent](https://github.com/protoLabsAI/protoAgent) —
+a single-repo project manager that reads deeply but never holds the keyboard:
 every change ships through a board of coding agents, verdict-gated, reported as
 it merges. The project-team counterpart of the Portfolio Manager (pm-stack).
 
@@ -20,10 +20,10 @@ stays reversible.
 ## Install
 
 ```
-python -m server plugin install https://github.com/protoLabsAI/lead-engineer-stack
+python -m server plugin install https://github.com/protoLabsAI/project-manager-stack
 ```
 
-— or pick **Lead Engineer** in the new-agent picker; it installs this bundle.
+— or pick **Project Manager** in the new-agent picker; it installs this bundle.
 
 ## After install (required)
 
