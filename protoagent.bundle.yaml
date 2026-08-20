@@ -30,7 +30,7 @@
 # manifest into a scratch agent and probe every declared console view). Keep member
 # entries on ONE line — scripts/check_bundle_updates.py rewrites the `ref:` in place.
 
-id: project-manager
+id: project-manager-archetype
 name: Project Manager
 description: >-
   A single-repo project manager — the bridge between an operator's intent and the
