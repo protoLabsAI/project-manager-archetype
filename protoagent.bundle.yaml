@@ -59,11 +59,25 @@ verified_against: 0.108.0
 
 plugins:
   - { id: delegates, builtin: true }                                                  # ACP/A2A spawn spine — ships with protoAgent
-  - { id: project_board, url: https://github.com/protoLabsAI/projectBoard-plugin,  ref: v0.40.0 }
+  - { id: project_board, url: https://github.com/protoLabsAI/projectBoard-plugin,  ref: v0.40.1 }
   - { id: agent_browser, url: https://github.com/protoLabsAI/agent-browser-plugin, ref: v0.6.4 }
   - { id: github,        url: https://github.com/protoLabsAI/github-plugin,        ref: v0.4.0 }
 
 enabled: [delegates, project_board, agent_browser, github]   # suggested turn-on list (you apply it)
+
+# Create-time setup prompts (#2934, core >= 0.144.0) — the Configure step in the
+# Setup Wizard and the fleet New Agent panel renders these and writes the answers
+# into the created agent's config at the dotted keys. This is what makes the
+# FIRST-RUN SETUP steps above get ASKED instead of discovered: without a repo the
+# board can't init, and without a coder delegate the archetype has no one to
+# dispatch builds to (the operator-reported first-run miss, 2026-08-21). The
+# delegate dropdown lists the host's configured ACP delegates — "No delegates
+# configured" means register one first (Settings ▸ Delegates, absolute command
+# path). Older cores ignore this block.
+config_inputs:
+  - { key: project_board.repo,  label: "Repo this board manages (absolute path to the git checkout)", type: path, required: true }
+  - { key: project_board.coder, label: "Coder delegate the board dispatches builds to", type: delegate, required: true }
+  - { key: github.default_repo, label: "GitHub repo (owner/name) for issues and PRs", type: string }
 config:                                              # recommended defaults (you apply them)
   # The lead reads, the pipeline writes (the PM-archetype invariant): file-mutation
   # tools are removed from the lead's palette entirely — investigation stays
