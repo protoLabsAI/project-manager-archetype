@@ -13,17 +13,27 @@
 # subset of the old pm-stack: project_board (runs the board + spawn loop) WITHOUT
 # portfolio (that's the manager-of-teams, a separate bundle).
 #
-# CODER SETUP (required, per-host): the archetype deliberately ships with NO coder
-# binding — coding delegates are host-installed binaries, and a wrong default is
-# worse than none. After install, register at least one `acp` delegate (Settings ▸
-# Delegates, ABSOLUTE command paths — GUI hosts don't inherit your shell PATH) and
-# set `project_board.coder` (single) or the `coders:` tier ladder to its name(s).
-# Example ladder (uncomment in your live config):
-#   project_board:
-#     coders: { smart: claude-code, reasoning: opus }   # small→smart, medium/large→reasoning
-# Then bind the repo: the `onboard-project` skill scans it, declares the local gate
-# command, and writes the grounding doc. Pin `db_path` to a private store if the
-# target repo commits its own .beads/.
+# FIRST-RUN SETUP (required, per-host — the archetype ships UNBOUND by design):
+# 1. Bind the repo: set `project_board.repo` (Settings ▸ Plugins ▸ Project Board).
+#    The shipped default is "." (the agent's cwd), which is only right when the
+#    process runs inside the target repo — on a GUI/desktop member the cwd is the
+#    app bundle (read-only), so an unbound board cannot even `br init`. The
+#    `onboard-project` skill scans the repo, declares the local gate command, and
+#    writes the grounding doc. Pin `db_path` to a private store if the target repo
+#    commits its own .beads/.
+# 2. Register a coder: the archetype deliberately ships with NO coder binding —
+#    coding delegates are host-installed binaries, and a wrong default is worse
+#    than none. Register at least one `acp` delegate (Settings ▸ Delegates,
+#    ABSOLUTE command paths — GUI hosts don't inherit your shell PATH) and set
+#    `project_board.coder` (single) or the `coders:` tier ladder to its name(s).
+#    Example ladder (uncomment in your live config):
+#      project_board:
+#        coders: { smart: claude-code, reasoning: opus }   # small→smart, medium/large→reasoning
+# 3. Flip `project_board.loop_enabled: true` — it ships OFF because a spawn loop
+#    aimed at an unbound repo with no coder can only thrash (see #1/#2).
+# 4. Scope the github write rail: `github.write` ships true (the persona files
+#    issues — its capability contract depends on it); bind `github.repos` /
+#    `default_repo` per-host, and the GH_TOKEN's scope bounds real capability.
 #
 # PIN LIFECYCLE (ADR 0049): members are pinned to release TAGS and only move through
 # a passing verify (scripts/ + .github/workflows/verify-bundle.yml install this
@@ -66,9 +76,14 @@ config:                                              # recommended defaults (you
   soul:
     self_edit_enabled: true
   project_board:
-    # NO coder default — see CODER SETUP above. Set `coder:` or `coders:` after
+    # NO coder default — see FIRST-RUN SETUP above. Set `coder:` or `coders:` after
     # registering your host's delegates.
-    loop_enabled: true
+    #
+    # The loop ships OFF (first-run safety): until the operator binds
+    # `project_board.repo` and a coder, an enabled spawn loop points at the
+    # unbound default repo "." — on a desktop member that cwd is read-only and
+    # the board can't even `br init`. Flip it on as FIRST-RUN SETUP step 3.
+    loop_enabled: false
     # Blocking adversarial review (board v0.30.0, plan M5): after each PR opens, the
     # loop runs the host's `code-review` workflow (protoAgent ADR 0077) and bounces
     # blocking findings back to the coder. Self-contained review out of the box; a
@@ -77,7 +92,14 @@ config:                                              # recommended defaults (you
     review_gate: true
     review_fix_max: 2
   github:
-    write: false          # read-only rail: the lead views issues/PRs; writes stay with the operator + coders
+    # WRITE rail ON (operator call, 2026-08-21): the bundle ships the github plugin
+    # AND the archetype's capability contract requires `github_create_issue` (the
+    # persona files the pain points it finds) — seeding write:false suppressed the
+    # very tool the contract declares, so every fresh agent booted straight into a
+    # capability-contract banner. write:true registers the write + review toolset;
+    # merges stay human, `/issue` stays a user-only chat command, and the GH_TOKEN
+    # scope + per-host `repos:` binding bound what it can actually touch.
+    write: true
   agent_browser:
     panel_mode: full
 
@@ -87,3 +109,7 @@ archetype:
   label: Project Manager
   icon: ClipboardList
   blurb: Single-repo project manager — reads deeply, never holds the keyboard; ships every change through a board of coding agents and reports back as it merges.
+  # Capability contract (#2277, ADR 0100): the persona commits to filing issues, so a
+  # direct bundle install self-registers with the same contract the core catalog row
+  # carries — satisfiable out of the box now that `github.write` seeds true above.
+  requires_tools: [github_create_issue]
