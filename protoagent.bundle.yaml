@@ -72,7 +72,7 @@ plugins:
   - { id: delegates, builtin: true }                                                  # ACP/A2A spawn spine — ships with protoAgent
   - { id: workflows, builtin: true }                                                  # the review gate's RUNNER + the bundled code-review recipe
   - { id: friction,  builtin: true }                                                  # write-only harness-friction ledger — pain points leave evidence
-  - { id: project_board, url: https://github.com/protoLabsAI/projectBoard-plugin,  ref: v0.41.2 }
+  - { id: project_board, url: https://github.com/protoLabsAI/projectBoard-plugin,  ref: v0.41.3 }
   - { id: agent_browser, url: https://github.com/protoLabsAI/agent-browser-plugin, ref: v0.6.4 }
   - { id: github,        url: https://github.com/protoLabsAI/github-plugin,        ref: v0.4.0 }
 
