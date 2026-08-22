@@ -2,42 +2,58 @@
 # portfolio→team hierarchy. This is the DEDICATED bundle repo the archetype
 # catalog installs (protoAgent's archetype-catalog.json `project-manager` row);
 # the persona ships as protoAgent's `project-manager` soul preset. Dogfooded on
-# the protoAgent repo itself (2026-07), then frozen. Development/reference host:
-# github.com/protoLabsAI/leadEngineer.
+# the protoAgent repo itself (2026-07), then frozen. Dogfooded live as
+# protoEngineer (protoAgent's own board) and orbisEngineer (ORBIS).
 #
 # Install (onto any host):  python -m server plugin install <this-repo-url>
 #
 # A Project Manager focuses on ONE repo and a set of coding agents. The Portfolio
 # Manager tier (portfolio plugin, ADR 0055) treats each Project Manager as a board it
 # can dispatch to over A2A and read back — so this bundle is deliberately the team
-# subset of the old pm-stack: project_board (runs the board + spawn loop) WITHOUT
-# portfolio (that's the manager-of-teams, a separate bundle).
+# subset: project_board (runs the board + spawn loop) WITHOUT portfolio (that's
+# the manager-of-teams, portfolio-manager-archetype).
 #
-# FIRST-RUN SETUP — mostly ASKED, not discovered. On core >= 0.144.0 the create
-# flow (Setup Wizard / New Agent panel) renders this manifest's `config_inputs:`
-# as a Configure step: the board repo (required), the coder delegate (required —
-# a dropdown of the host's registered ACP delegates), the GitHub repo, and the
-# loop toggle are collected up front and written into the agent's config. What
-# that step CANNOT conjure, and how the archetype covers each gap:
+# FIRST-RUN SETUP — ASKED, not discovered. On core >= 0.144.0 the create flow
+# (Setup Wizard / New Agent panel) renders this manifest's `config_inputs:` as a
+# Configure step: the board repo (required), the coder delegate (required — a
+# dropdown of the host's registered ACP delegates), the GitHub repo, the loop
+# toggle, and whether the loop merges its own PRs. On core >= 0.146.0 the two
+# required answers are a HARD gate (a create without them is refused, naming the
+# prompt), the picked delegate is COPIED into the new member's own registry
+# (members resolve delegates from their own config — before 0.146 only the name
+# travelled and the first dispatch failed "not found"), and the repo path is
+# registered as a MANAGED PROJECT (`project: true` below: an ADR 0095 `projects:`
+# entry with its GitHub owner/name parsed from the origin remote, plus
+# `onboarding.root` scoped to the repo's parent so `onboard_project` can bind).
 #
-# 1. A coder delegate must EXIST on the host. Coding delegates are host-installed
-#    binaries (ABSOLUTE command paths — GUI hosts don't inherit your shell PATH),
-#    so the dropdown may honestly say "No delegates configured". Two ways out:
-#    register one in Settings ▸ Delegates, or let the agent `propose_delegate`
-#    (core >= 0.145) — it validates + probes the entry and PARKS for your
-#    approval; nothing registers without it. Tier ladder alternative to the
-#    single `coder:`:
+# BEFORE YOU START — two host binaries the form can't install for you:
+#   * `br` (beads-rust — `cargo install beads_rust`, NOT the homebrew `bd`): the
+#     board is a projection over beads; without it the board is paused.
+#   * `gh` (GitHub CLI), logged in (`gh auth login`) or a token in Settings ▸
+#     GitHub (github-plugin 0.6.0 ships the token field + a status card): issues,
+#     PRs, and the loop's merge edge.
+#   Both must be on the PATH the agent process sees — the desktop app passes your
+#   login-shell PATH; an absolute `command:` on the delegate is the safe fallback
+#   for launchd autostart / Linux. When either is missing, the member says so as
+#   an operator warning (core >= 0.146, plugin setup-gap seam) and the board's
+#   setup card names it — it does not boot green.
+#
+# 1. A coder delegate must EXIST on the host. If the dropdown says "No coding
+#    (acp) delegates configured": register one in Settings ▸ Delegates, or let
+#    the agent `propose_delegate` (core >= 0.145) — it validates + probes the
+#    entry and PARKS for your approval; nothing registers without it. Tier
+#    ladder alternative to the single `coder:`:
 #      project_board:
 #        coders: { smart: claude-code, reasoning: opus }   # small→smart, medium/large→reasoning
-# 2. Ground the repo: the `onboard_project` tool / `onboard-project` skill scans
-#    the bound repo, declares the local gate command, registers it in the ADR
-#    0095 `projects:` registry (fs tools + github picker + board all read it),
-#    and writes the grounding doc. Requires the host's `onboarding.enabled` +
-#    `onboarding.root` consent gate. Pin `db_path` to a private store if the
-#    target repo commits its own .beads/.
+# 2. Grounding: the Configure-step repo is already a managed project (core >=
+#    0.146); the persona reads it through the registry. projectBoard's
+#    `onboard-project` skill declares the local gate + writes the grounding doc.
+#    Pin `db_path` to a private store if the target repo commits its own .beads/.
 # 3. The loop ships OFF unless the Configure step's toggle says otherwise — a
 #    spawn loop with no repo or coder can only thrash. Flip it in Settings any
-#    time (`project_board.loop_enabled`).
+#    time (`project_board.loop_enabled`). projectBoard >= 0.42.0 pauses the loop
+#    (with the reason) instead of ticking into errors when `br` or the coder is
+#    missing, and resumes by itself once they appear.
 # 4. The review gate ships ON and RUNNABLE: the `workflows` member below provides
 #    the runner + the bundled `code-review` recipe, so every PR passes an
 #    adversarial review before it settles into in_review. An unrunnable gate
@@ -46,10 +62,14 @@
 #    issues — its capability contract depends on it); bind `github.repos` /
 #    `default_repo` per-host, and the GH_TOKEN's scope bounds real capability.
 #
-# PIN LIFECYCLE (ADR 0049): members are pinned to release TAGS and only move through
-# a passing verify (scripts/ + .github/workflows/verify-bundle.yml install this
-# manifest into a scratch agent and probe every declared console view). Keep member
-# entries on ONE line — scripts/check_bundle_updates.py rewrites the `ref:` in place.
+# PIN LIFECYCLE (ADR 0049): members are pinned to release TAGS and the pin moves
+# through a passing verify (scripts/ + .github/workflows/verify-bundle.yml install
+# this manifest into a scratch agent, load it with the recommended config, probe
+# every declared console view, and check the capability contract binds). On core
+# >= 0.146 a release-tag pin is a FLOOR: installs take each member's newest semver
+# tag (protoAgent #2960), so the pin records what was verified rather than what a
+# fresh agent necessarily gets. Keep member entries on ONE line —
+# scripts/check_bundle_updates.py rewrites the `ref:` in place.
 
 id: project-manager-archetype
 name: Project Manager
@@ -61,20 +81,21 @@ description: >-
   opened as a PR, walked through review, and reported as it merges to done. The
   project-team counterpart of the Portfolio Manager (ADR 0055) — built to be
   delegated to, and to report back. Composes the delegates spine + project_board
-  (the board + spawn loop) + a read-only GitHub rail + a browser for verification.
-  Portfolio orchestration is intentionally NOT bundled here.
+  (the board + spawn loop) + a GitHub rail (write ON: it files the pain points it
+  finds; the loop merges its own reviewed PRs when auto_merge is on) + a browser
+  for verification. Portfolio orchestration is intentionally NOT bundled here.
 
 # The core version this exact pin set was last verified against (ADR 0049). The
 # verify workflow checks out this protoAgent ref for the smoke — bump on re-verify.
-verified_against: 0.144.0
+verified_against: 0.145.0
 
 plugins:
   - { id: delegates, builtin: true }                                                  # ACP/A2A spawn spine — ships with protoAgent
   - { id: workflows, builtin: true }                                                  # the review gate's RUNNER + the bundled code-review recipe
   - { id: friction,  builtin: true }                                                  # write-only harness-friction ledger — pain points leave evidence
-  - { id: project_board, url: https://github.com/protoLabsAI/projectBoard-plugin,  ref: v0.41.4 }
+  - { id: project_board, url: https://github.com/protoLabsAI/projectBoard-plugin,  ref: v0.42.0 }
   - { id: agent_browser, url: https://github.com/protoLabsAI/agent-browser-plugin, ref: v0.6.4 }
-  - { id: github,        url: https://github.com/protoLabsAI/github-plugin,        ref: v0.4.0 }
+  - { id: github,        url: https://github.com/protoLabsAI/github-plugin,        ref: v0.6.0 }
 
 # workflows: without it the M5 review gate below is UNRUNNABLE — the board probes
 # STATE.workflow_run, finds nothing, and (correctly, fail-closed) blocks every
@@ -96,7 +117,7 @@ enabled: [delegates, workflows, friction, project_board, agent_browser, github] 
 # configured" means register one first (Settings ▸ Delegates, absolute command
 # path). Older cores ignore this block.
 config_inputs:
-  - { key: project_board.repo,  label: "Repo this board manages (absolute path to the git checkout)", type: path, required: true }
+  - { key: project_board.repo,  label: "Repo this board manages (absolute path to the git checkout)", type: path, required: true, project: true }
   - { key: project_board.coder, label: "Coder delegate the board dispatches builds to", type: delegate, required: true }
   - { key: github.default_repo, label: "GitHub repo (owner/name) for issues and PRs", type: string }
   - { key: project_board.loop_enabled, label: "Start the build loop now (needs the repo + coder above)", type: boolean, default: false }
@@ -155,6 +176,10 @@ config:                                              # recommended defaults (you
 archetype:
   label: Project Manager
   icon: ClipboardList
+  # The persona + picker tier, so a DIRECT `plugin install <url>` on a host whose
+  # catalog has no project-manager row still gets the PM soul (not the base one).
+  soul_preset: project-manager
+  tier: advanced
   blurb: Single-repo project manager — reads deeply, never holds the keyboard; ships every change through a board of coding agents and reports back as it merges.
   # Capability contract (#2277, ADR 0100): the persona commits to filing issues, so a
   # direct bundle install self-registers with the same contract the core catalog row
