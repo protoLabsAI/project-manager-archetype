@@ -13,25 +13,36 @@
 # subset of the old pm-stack: project_board (runs the board + spawn loop) WITHOUT
 # portfolio (that's the manager-of-teams, a separate bundle).
 #
-# FIRST-RUN SETUP (required, per-host — the archetype ships UNBOUND by design):
-# 1. Bind the repo: set `project_board.repo` (Settings ▸ Plugins ▸ Project Board).
-#    The shipped default is "." (the agent's cwd), which is only right when the
-#    process runs inside the target repo — on a GUI/desktop member the cwd is the
-#    app bundle (read-only), so an unbound board cannot even `br init`. The
-#    `onboard-project` skill scans the repo, declares the local gate command, and
-#    writes the grounding doc. Pin `db_path` to a private store if the target repo
-#    commits its own .beads/.
-# 2. Register a coder: the archetype deliberately ships with NO coder binding —
-#    coding delegates are host-installed binaries, and a wrong default is worse
-#    than none. Register at least one `acp` delegate (Settings ▸ Delegates,
-#    ABSOLUTE command paths — GUI hosts don't inherit your shell PATH) and set
-#    `project_board.coder` (single) or the `coders:` tier ladder to its name(s).
-#    Example ladder (uncomment in your live config):
+# FIRST-RUN SETUP — mostly ASKED, not discovered. On core >= 0.144.0 the create
+# flow (Setup Wizard / New Agent panel) renders this manifest's `config_inputs:`
+# as a Configure step: the board repo (required), the coder delegate (required —
+# a dropdown of the host's registered ACP delegates), the GitHub repo, and the
+# loop toggle are collected up front and written into the agent's config. What
+# that step CANNOT conjure, and how the archetype covers each gap:
+#
+# 1. A coder delegate must EXIST on the host. Coding delegates are host-installed
+#    binaries (ABSOLUTE command paths — GUI hosts don't inherit your shell PATH),
+#    so the dropdown may honestly say "No delegates configured". Two ways out:
+#    register one in Settings ▸ Delegates, or let the agent `propose_delegate`
+#    (core >= 0.145) — it validates + probes the entry and PARKS for your
+#    approval; nothing registers without it. Tier ladder alternative to the
+#    single `coder:`:
 #      project_board:
 #        coders: { smart: claude-code, reasoning: opus }   # small→smart, medium/large→reasoning
-# 3. Flip `project_board.loop_enabled: true` — it ships OFF because a spawn loop
-#    aimed at an unbound repo with no coder can only thrash (see #1/#2).
-# 4. Scope the github write rail: `github.write` ships true (the persona files
+# 2. Ground the repo: the `onboard_project` tool / `onboard-project` skill scans
+#    the bound repo, declares the local gate command, registers it in the ADR
+#    0095 `projects:` registry (fs tools + github picker + board all read it),
+#    and writes the grounding doc. Requires the host's `onboarding.enabled` +
+#    `onboarding.root` consent gate. Pin `db_path` to a private store if the
+#    target repo commits its own .beads/.
+# 3. The loop ships OFF unless the Configure step's toggle says otherwise — a
+#    spawn loop with no repo or coder can only thrash. Flip it in Settings any
+#    time (`project_board.loop_enabled`).
+# 4. The review gate ships ON and RUNNABLE: the `workflows` member below provides
+#    the runner + the bundled `code-review` recipe, so every PR passes an
+#    adversarial review before it settles into in_review. An unrunnable gate
+#    fails CLOSED (cards block with the reason) — never silently advisory.
+# 5. Scope the github write rail: `github.write` ships true (the persona files
 #    issues — its capability contract depends on it); bind `github.repos` /
 #    `default_repo` per-host, and the GH_TOKEN's scope bounds real capability.
 #
@@ -55,15 +66,25 @@ description: >-
 
 # The core version this exact pin set was last verified against (ADR 0049). The
 # verify workflow checks out this protoAgent ref for the smoke — bump on re-verify.
-verified_against: 0.108.0
+verified_against: 0.144.0
 
 plugins:
   - { id: delegates, builtin: true }                                                  # ACP/A2A spawn spine — ships with protoAgent
-  - { id: project_board, url: https://github.com/protoLabsAI/projectBoard-plugin,  ref: v0.40.1 }
+  - { id: workflows, builtin: true }                                                  # the review gate's RUNNER + the bundled code-review recipe
+  - { id: friction,  builtin: true }                                                  # write-only harness-friction ledger — pain points leave evidence
+  - { id: project_board, url: https://github.com/protoLabsAI/projectBoard-plugin,  ref: v0.41.2 }
   - { id: agent_browser, url: https://github.com/protoLabsAI/agent-browser-plugin, ref: v0.6.4 }
   - { id: github,        url: https://github.com/protoLabsAI/github-plugin,        ref: v0.4.0 }
 
-enabled: [delegates, project_board, agent_browser, github]   # suggested turn-on list (you apply it)
+# workflows: without it the M5 review gate below is UNRUNNABLE — the board probes
+# STATE.workflow_run, finds nothing, and (correctly, fail-closed) blocks every
+# reviewed card with "no workflow runner available" after 3 attempts. The plugin
+# ships the code-review recipe (parallel finders → synthesizer → verifier) the gate
+# runs; a boot warning "config_section 'workflows' collides with a built-in —
+# ignored" is benign. friction: every tool exception auto-records to the member's
+# friction.jsonl — the ledger that turns a rough first day into filed issues
+# instead of vanished evidence.
+enabled: [delegates, workflows, friction, project_board, agent_browser, github]   # suggested turn-on list (you apply it)
 
 # Create-time setup prompts (#2934, core >= 0.144.0) — the Configure step in the
 # Setup Wizard and the fleet New Agent panel renders these and writes the answers
@@ -78,6 +99,7 @@ config_inputs:
   - { key: project_board.repo,  label: "Repo this board manages (absolute path to the git checkout)", type: path, required: true }
   - { key: project_board.coder, label: "Coder delegate the board dispatches builds to", type: delegate, required: true }
   - { key: github.default_repo, label: "GitHub repo (owner/name) for issues and PRs", type: string }
+  - { key: project_board.loop_enabled, label: "Start the build loop now (needs the repo + coder above)", type: boolean, default: false }
 config:                                              # recommended defaults (you apply them)
   # The lead reads, the pipeline writes (the PM-archetype invariant): file-mutation
   # tools are removed from the lead's palette entirely — investigation stays
@@ -93,10 +115,11 @@ config:                                              # recommended defaults (you
     # NO coder default — see FIRST-RUN SETUP above. Set `coder:` or `coders:` after
     # registering your host's delegates.
     #
-    # The loop ships OFF (first-run safety): until the operator binds
-    # `project_board.repo` and a coder, an enabled spawn loop points at the
-    # unbound default repo "." — on a desktop member that cwd is read-only and
-    # the board can't even `br init`. Flip it on as FIRST-RUN SETUP step 3.
+    # The loop ships OFF (first-run safety): until a repo and coder are bound,
+    # an enabled spawn loop points at the unbound default repo "." — on a desktop
+    # member that cwd is read-only and the board can't even `br init`. The
+    # Configure step's toggle (config_inputs below) flips it at create time;
+    # Settings ▸ Plugins ▸ Project Board any time after.
     loop_enabled: false
     # Blocking adversarial review (board v0.30.0, plan M5): after each PR opens, the
     # loop runs the host's `code-review` workflow (protoAgent ADR 0077) and bounces
