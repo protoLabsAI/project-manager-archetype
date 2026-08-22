@@ -21,7 +21,7 @@ verify-and-bump pin lifecycle. If you're authoring a bundle, copy its shapes.
 | `friction` | builtin | write-only harness-friction ledger — every tool exception leaves evidence instead of vanishing |
 | `project_board` | [projectBoard-plugin](https://github.com/protoLabsAI/projectBoard-plugin) | the board + spawn loop: features → worktree builds → PRs → review gate → done; live coder monitor |
 | `agent_browser` | [agent-browser-plugin](https://github.com/protoLabsAI/agent-browser-plugin) | a real browser to verify running changes |
-| `github` | [github-plugin](https://github.com/protoLabsAI/github-plugin) | issues/PR rail — write ON (the persona files the pain points it finds); merges stay human |
+| `github` | [github-plugin](https://github.com/protoLabsAI/github-plugin) | issues/PR rail — write ON (the persona files the pain points it finds); the loop merges its own reviewed, CI-green PRs when `auto_merge` is on, otherwise a human does |
 
 The config defaults enforce the archetype's core invariant — **the lead reads,
 the pipeline writes**: file-mutation tools are disabled (`tools.disabled`),
@@ -36,27 +36,47 @@ python -m server plugin install https://github.com/protoLabsAI/project-manager-a
 
 — or pick **Project Manager** in the new-agent picker; it installs this bundle.
 
+## Before you start
+
+Two host binaries the Configure step cannot install for you, both on the PATH the
+agent process sees (the desktop app passes your login-shell PATH; launchd
+autostart / Linux hosts may need an absolute `command:` on the delegate):
+
+* **`br`** — beads-rust (`cargo install beads_rust`, *not* the homebrew `bd`).
+  The board is a projection over beads; without it the board is paused.
+* **`gh`** — the GitHub CLI, logged in (`gh auth login`) or a token pasted in
+  Settings ▸ GitHub (github-plugin ≥ 0.6.0). Issues, PRs, and the loop's merge
+  edge all ride it.
+
+When either is missing the member does **not** boot green: it raises an operator
+warning (core ≥ 0.146, the plugin setup-gap seam) and the board's setup card
+names the gap; projectBoard ≥ 0.42.0 pauses the loop with the reason and resumes
+by itself once the binary appears.
+
 ## First run: asked, not discovered
 
 On core ≥ 0.144.0 the create flow renders this manifest's `config_inputs:` as a
-Configure step — the board repo, the coder delegate (a dropdown of the host's
-registered ACP delegates), the GitHub repo, and the loop toggle are collected
-up front and written into the agent's config — plus **whether the loop merges its
-own PRs** (`project_board.auto_merge`, on by default here: a reviewed, CI-green PR
-merges and the card reaches *done* without a human; off means *you* merge, and the
-card waits in *in_review* until you do). Two things the form can't conjure:
+Configure step — five answers, written into the agent's config:
 
-1. **A coder delegate must exist on the host.** Coding agents are host-installed
-   binaries (absolute command paths — GUI hosts don't inherit your shell PATH).
-   If the dropdown says "No delegates configured": register one in
-   Settings ▸ Delegates, or let the agent `propose_delegate` (core ≥ 0.145) —
-   it validates + probes the entry and pauses for your approval; nothing
-   registers without it.
-2. **Grounding.** Have the agent run `onboard_project` on first contact: it
-   scans the bound repo, declares the local gate command, registers the repo in
-   the managed-projects registry (filesystem tools, the GitHub picker, and the
-   board all read it), and writes the grounding doc. Needs the host's
-   `onboarding.enabled` + `onboarding.root` consent gate.
+| answer | key | notes |
+|---|---|---|
+| the repo this board manages | `project_board.repo` | **required**; on core ≥ 0.146 also registered as a managed project (ADR 0095 `projects:` entry, GitHub `owner/name` from its origin remote, `onboarding.root` scoped to its parent) |
+| the coder delegate | `project_board.coder` | **required**; a dropdown of the host's coding (`acp`) delegates — on core ≥ 0.146 the picked entry is *copied* into the new member's own registry |
+| the GitHub repo | `github.default_repo` | `owner/name` for issues/PRs (github-plugin ≥ 0.6.0 derives it from the repo's remote when blank) |
+| start the loop now | `project_board.loop_enabled` | off by default — a loop with no repo or coder can only thrash |
+| merge reviewed PRs itself | `project_board.auto_merge` | **on** by default: a reviewed, CI-green PR merges and the card reaches *done* without a human; off means *you* merge and the card waits in *in_review* |
+
+On core ≥ 0.146 the two required answers are a hard gate — a create without
+them is refused, naming the prompt. What the form still can't conjure:
+
+1. **A coder delegate must exist on the host.** If the dropdown says "No coding
+   (acp) delegates configured": register one in Settings ▸ Delegates, or let the
+   agent `propose_delegate` (core ≥ 0.145) — it validates + probes the entry and
+   pauses for your approval; nothing registers without it.
+2. **Grounding.** The Configure-step repo is already a managed project; the
+   persona reads it through the registry (its grounding doc, ADRs, gate table).
+   projectBoard's `onboard-project` skill declares the local gate command and
+   writes the grounding doc when the repo has none.
 
 ## The review gate
 
@@ -70,7 +90,12 @@ is benign.
 
 ## Pin lifecycle (ADR 0049)
 
-Members pin release **tags** and only move through a passing verify:
+Members pin release **tags**. On core ≥ 0.146 a release-tag pin is a **floor**,
+not the answer: a fresh install (and a bundle update) takes each member's newest
+semver tag, so a member the operator force-installed ahead of the archetype is
+never downgraded and a new plugin release reaches new agents without waiting for
+a pin bump (protoAgent #2960). The pin still records what was *verified*, and
+the bump PR is how that record moves:
 `scripts/check_bundle_updates.py` proposes bumps (weekly + on demand),
 `.github/workflows/verify-bundle.yml` installs the pin set into a scratch agent
 on a fresh protoAgent checkout and probes every declared console view. A pin-bump
