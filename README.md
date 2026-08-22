@@ -41,7 +41,10 @@ python -m server plugin install https://github.com/protoLabsAI/project-manager-a
 On core ≥ 0.144.0 the create flow renders this manifest's `config_inputs:` as a
 Configure step — the board repo, the coder delegate (a dropdown of the host's
 registered ACP delegates), the GitHub repo, and the loop toggle are collected
-up front and written into the agent's config. Two things the form can't conjure:
+up front and written into the agent's config — plus **whether the loop merges its
+own PRs** (`project_board.auto_merge`, on by default here: a reviewed, CI-green PR
+merges and the card reaches *done* without a human; off means *you* merge, and the
+card waits in *in_review* until you do). Two things the form can't conjure:
 
 1. **A coder delegate must exist on the host.** Coding agents are host-installed
    binaries (absolute command paths — GUI hosts don't inherit your shell PATH).

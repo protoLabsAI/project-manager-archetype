@@ -100,6 +100,7 @@ config_inputs:
   - { key: project_board.coder, label: "Coder delegate the board dispatches builds to", type: delegate, required: true }
   - { key: github.default_repo, label: "GitHub repo (owner/name) for issues and PRs", type: string }
   - { key: project_board.loop_enabled, label: "Start the build loop now (needs the repo + coder above)", type: boolean, default: false }
+  - { key: project_board.auto_merge,   label: "Merge a PR yourself once review + CI are green (off = a human merges)", type: boolean, default: true }
 config:                                              # recommended defaults (you apply them)
   # The lead reads, the pipeline writes (the PM-archetype invariant): file-mutation
   # tools are removed from the lead's palette entirely — investigation stays
@@ -128,6 +129,15 @@ config:                                              # recommended defaults (you
     # through `POST /features/{fid}/review` (board v0.34.0) instead.
     review_gate: true
     review_fix_max: 2
+    # The loop merges its own reviewed, CI-green PRs. OFF means nobody merges — cards
+    # sit in in_review until a human does, and the first-run read is "it's stuck". The
+    # Configure step asks; this is the default the toggle starts from.
+    auto_merge: true
+    # "auto" discovers the repo's own gate (package.json / Makefile / pyproject targets)
+    # and runs it in the worktree before a PR opens — AND arms the merged-state verify,
+    # so a PR whose base moved is re-gated on the state that will actually land before
+    # auto_merge touches it. A repo with no discoverable gate resolves to none.
+    local_gate_cmd: auto
   github:
     # WRITE rail ON (operator call, 2026-08-21): the bundle ships the github plugin
     # AND the archetype's capability contract requires `github_create_issue` (the
