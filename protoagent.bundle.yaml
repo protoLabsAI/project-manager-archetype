@@ -33,10 +33,12 @@
 #     GitHub (github-plugin 0.6.0 ships the token field + a status card): issues,
 #     PRs, and the loop's merge edge.
 #   Both must be on the PATH the agent process sees — the desktop app passes your
-#   login-shell PATH; an absolute `command:` on the delegate is the safe fallback
-#   for launchd autostart / Linux. When either is missing, the member says so as
-#   an operator warning (core >= 0.146, plugin setup-gap seam) and the board's
-#   setup card names it — it does not boot green.
+#   login-shell PATH (+ ~/.cargo/bin, ~/.local/bin; Linux too from core 0.147);
+#   an absolute `command:` on the delegate is the safe fallback. When either is
+#   missing, the member says so as an operator warning (core >= 0.146, plugin
+#   setup-gap seam) and the board's setup card names it — it does not boot green.
+#   projectBoard >= 0.43.0 fetches a pinned `br` itself on first run
+#   (`project_board.br_autofetch`, default on) — `cargo install` is the fallback.
 #
 # 1. A coder delegate must EXIST on the host. If the dropdown says "No coding
 #    (acp) delegates configured": register one in Settings ▸ Delegates, or let
@@ -165,8 +167,11 @@ config:                                              # recommended defaults (you
     # persona files the pain points it finds) — seeding write:false suppressed the
     # very tool the contract declares, so every fresh agent booted straight into a
     # capability-contract banner. write:true registers the write + review toolset;
-    # merges stay human, `/issue` stays a user-only chat command, and the GH_TOKEN
-    # scope + per-host `repos:` binding bound what it can actually touch.
+    # the board's loop merges its own reviewed PRs when `auto_merge` is on (above),
+    # `/issue` stays a user-only chat command, and the GH_TOKEN scope + per-host
+    # `repos:` binding bound what it can actually touch. github-plugin 0.6.0 adds
+    # a status card + `secrets: [token]`; 0.7.0 the PM verbs (list PRs, merge-
+    # readiness, comments, search-before-filing, body-gated create_issue).
     write: true
   agent_browser:
     panel_mode: full

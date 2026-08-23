@@ -23,7 +23,8 @@ verify-and-bump pin lifecycle. If you're authoring a bundle, copy its shapes.
 | `agent_browser` | [agent-browser-plugin](https://github.com/protoLabsAI/agent-browser-plugin) | a real browser to verify running changes |
 | `github` | [github-plugin](https://github.com/protoLabsAI/github-plugin) | issues/PR rail — write ON (the persona files the pain points it finds); the loop merges its own reviewed, CI-green PRs when `auto_merge` is on, otherwise a human does |
 
-The config defaults enforce the archetype's core invariant — **the lead reads,
+The setup-gap banner (core ≥ 0.146) is the floor for seeing these plugins'
+preflight in the console; on older cores they only log. The config defaults enforce the archetype's core invariant — **the lead reads,
 the pipeline writes**: file-mutation tools are disabled (`tools.disabled`),
 investigation tools stay, every change ships as a reviewed PR, and `edit_soul`
 history is on so persona evolution stays reversible.
@@ -42,7 +43,9 @@ Two host binaries the Configure step cannot install for you, both on the PATH th
 agent process sees (the desktop app passes your login-shell PATH; launchd
 autostart / Linux hosts may need an absolute `command:` on the delegate):
 
-* **`br`** — beads-rust (`cargo install beads_rust`, *not* the homebrew `bd`).
+* **`br`** — beads-rust. projectBoard ≥ 0.43.0 fetches a pinned build itself on
+  first run (`project_board.br_autofetch`, on by default; needs github.com
+  reachable); otherwise `cargo install beads_rust` (*not* the homebrew `bd`).
   The board is a projection over beads; without it the board is paused.
 * **`gh`** — the GitHub CLI, logged in (`gh auth login`) or a token pasted in
   Settings ▸ GitHub (github-plugin ≥ 0.6.0). Issues, PRs, and the loop's merge
@@ -94,8 +97,10 @@ Members pin release **tags**. On core ≥ 0.146 a release-tag pin is a **floor**
 not the answer: a fresh install (and a bundle update) takes each member's newest
 semver tag, so a member the operator force-installed ahead of the archetype is
 never downgraded and a new plugin release reaches new agents without waiting for
-a pin bump (protoAgent #2960). The pin still records what was *verified*, and
-the bump PR is how that record moves:
+a pin bump (protoAgent #2960). `python -m server plugin update-bundle
+project-manager-archetype` on a member does the same — it moves the bundle to
+its newest tag and each member to theirs; pass `--ref` only to pin. The pin
+still records what was *verified*, and the bump PR is how that record moves:
 `scripts/check_bundle_updates.py` proposes bumps (weekly + on demand),
 `.github/workflows/verify-bundle.yml` installs the pin set into a scratch agent
 on a fresh protoAgent checkout and probes every declared console view. A pin-bump
