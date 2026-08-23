@@ -95,7 +95,7 @@ plugins:
   - { id: friction,  builtin: true }                                                  # write-only harness-friction ledger — pain points leave evidence
   - { id: project_board, url: https://github.com/protoLabsAI/projectBoard-plugin,  ref: v0.42.0 }
   - { id: agent_browser, url: https://github.com/protoLabsAI/agent-browser-plugin, ref: v0.6.4 }
-  - { id: github,        url: https://github.com/protoLabsAI/github-plugin,        ref: v0.6.0 }
+  - { id: github,        url: https://github.com/protoLabsAI/github-plugin,        ref: v0.7.0 }
 
 # workflows: without it the M5 review gate below is UNRUNNABLE — the board probes
 # STATE.workflow_run, finds nothing, and (correctly, fail-closed) blocks every
