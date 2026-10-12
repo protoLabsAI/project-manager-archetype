@@ -23,8 +23,9 @@ verify-and-bump pin lifecycle. If you're authoring a bundle, copy its shapes.
 | `agent_browser` | [agent-browser-plugin](https://github.com/protoLabsAI/agent-browser-plugin) | a real browser to verify running changes |
 | `github` | [github-plugin](https://github.com/protoLabsAI/github-plugin) | issues/PR rail — write ON (the persona files the pain points it finds); the loop merges its own reviewed, CI-green PRs when `auto_merge` is on, otherwise a human does |
 
-The setup-gap banner (core ≥ 0.146) is the floor for seeing these plugins'
-preflight in the console; on older cores they only log. The config defaults enforce the archetype's core invariant — **the lead reads,
+**Core floor: protoAgent ≥ 0.185.0** — projectBoard v0.65.0's
+`min_protoagent_version`. Pins: project_board v0.65.0, agent_browser v0.6.4,
+github v0.9.1 (verified against core 0.200.0). The config defaults enforce the archetype's core invariant — **the lead reads,
 the pipeline writes**: file-mutation tools are disabled (`tools.disabled`),
 investigation tools stay, every change ships as a reviewed PR, and `edit_soul`
 history is on so persona evolution stays reversible.
@@ -95,9 +96,10 @@ is benign.
 
 Members pin release **tags**. On core ≥ 0.146 a release-tag pin is a **floor**,
 not the answer: a fresh install (and a bundle update) takes each member's newest
-semver tag, so a member the operator force-installed ahead of the archetype is
-never downgraded and a new plugin release reaches new agents without waiting for
-a pin bump (protoAgent #2960). `python -m server plugin update-bundle
+*compatible* tag (caret semantics — for 0.x the minor is the boundary, so v0.65.0
+takes v0.65.1 but not v0.66.0; protoAgent #3288), so a member the operator force-installed ahead of the archetype is
+never downgraded and a compatible plugin release reaches new agents without waiting
+for a pin bump (protoAgent #2960). Adopting a new 0.x minor is a pin bump. `python -m server plugin update-bundle
 project-manager-archetype` on a member does the same — it moves the bundle to
 its newest tag and each member to theirs; pass `--ref` only to pin. The pin
 still records what was *verified*, and the bump PR is how that record moves:

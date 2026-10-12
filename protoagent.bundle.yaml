@@ -68,9 +68,11 @@
 # through a passing verify (scripts/ + .github/workflows/verify-bundle.yml install
 # this manifest into a scratch agent, load it with the recommended config, probe
 # every declared console view, and check the capability contract binds). On core
-# >= 0.146 a release-tag pin is a FLOOR: installs take each member's newest semver
-# tag (protoAgent #2960), so the pin records what was verified rather than what a
-# fresh agent necessarily gets. Keep member entries on ONE line —
+# >= 0.146 a release-tag pin is a FLOOR: installs take each member's newest
+# COMPATIBLE tag (caret semantics — for 0.x the minor is the boundary, so v0.65.0
+# takes v0.65.1 but not v0.66.0; protoAgent #2960/#3288), so the pin records what
+# was verified rather than what a fresh agent necessarily gets. Adopting a new
+# 0.x minor is a pin bump. Keep member entries on ONE line —
 # scripts/check_bundle_updates.py rewrites the `ref:` in place.
 
 id: project-manager-archetype
@@ -89,15 +91,16 @@ description: >-
 
 # The core version this exact pin set was last verified against (ADR 0049). The
 # verify workflow checks out this protoAgent ref for the smoke — bump on re-verify.
-verified_against: 0.145.0
+# CORE FLOOR: protoAgent >= 0.185.0 — projectBoard v0.65.0's min_protoagent_version.
+verified_against: 0.200.0
 
 plugins:
   - { id: delegates, builtin: true }                                                  # ACP/A2A spawn spine — ships with protoAgent
   - { id: workflows, builtin: true }                                                  # the review gate's RUNNER + the bundled code-review recipe
   - { id: friction,  builtin: true }                                                  # write-only harness-friction ledger — pain points leave evidence
-  - { id: project_board, url: https://github.com/protoLabsAI/projectBoard-plugin,  ref: v0.47.0 }
+  - { id: project_board, url: https://github.com/protoLabsAI/projectBoard-plugin,  ref: v0.65.0 }
   - { id: agent_browser, url: https://github.com/protoLabsAI/agent-browser-plugin, ref: v0.6.4 }
-  - { id: github,        url: https://github.com/protoLabsAI/github-plugin,        ref: v0.7.0 }
+  - { id: github,        url: https://github.com/protoLabsAI/github-plugin,        ref: v0.9.1 }
 
 # workflows: without it the M5 review gate below is UNRUNNABLE — the board probes
 # STATE.workflow_run, finds nothing, and (correctly, fail-closed) blocks every
