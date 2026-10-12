@@ -77,6 +77,11 @@
 
 id: project-manager-archetype
 name: Project Manager
+# Release version — the source of truth for the vX.Y.Z tag. Read by release-tools'
+# plugin-release.yml (.github/workflows/release.yml); protoAgent's bundle loader ignores it.
+# Bump it in the PR that ships the release, then merge as `chore: release vX.Y.Z` (or
+# run the Release workflow by hand).
+version: 0.7.0
 description: >-
   A single-repo project manager — the bridge between an operator's intent and the
   team that ships it. It reads code deeply but never holds the keyboard: its file
