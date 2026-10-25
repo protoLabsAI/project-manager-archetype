@@ -81,7 +81,7 @@ name: Project Manager
 # plugin-release.yml (.github/workflows/release.yml); protoAgent's bundle loader ignores it.
 # Bump it in the PR that ships the release, then merge as `chore: release vX.Y.Z` (or
 # run the Release workflow by hand).
-version: 0.7.0
+version: 0.8.0
 description: >-
   A single-repo project manager — the bridge between an operator's intent and the
   team that ships it. It reads code deeply but never holds the keyboard: its file
@@ -103,9 +103,9 @@ plugins:
   - { id: delegates, builtin: true }                                                  # ACP/A2A spawn spine — ships with protoAgent
   - { id: workflows, builtin: true }                                                  # the review gate's RUNNER + the bundled code-review recipe
   - { id: friction,  builtin: true }                                                  # write-only harness-friction ledger — pain points leave evidence
-  - { id: project_board, url: https://github.com/protoLabsAI/projectBoard-plugin,  ref: v0.65.0 }
+  - { id: project_board, url: https://github.com/protoLabsAI/projectBoard-plugin,  ref: v0.72.0 }
   - { id: agent_browser, url: https://github.com/protoLabsAI/agent-browser-plugin, ref: v0.6.4 }
-  - { id: github,        url: https://github.com/protoLabsAI/github-plugin,        ref: v0.9.1 }
+  - { id: github,        url: https://github.com/protoLabsAI/github-plugin,        ref: v0.9.3 }
 
 # workflows: without it the M5 review gate below is UNRUNNABLE — the board probes
 # STATE.workflow_run, finds nothing, and (correctly, fail-closed) blocks every
